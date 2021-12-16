@@ -37,9 +37,10 @@ object PomTests extends TestSuite {
         )
       )
     )
+    val versionScheme = VersionScheme.NoScheme
 
     'fullPom - {
-      val fullPom = pomXml(artifact, deps, artifactId, settings)
+      val fullPom = pomXml(artifact, deps, artifactId, settings, versionScheme)
 
       'topLevel - {
         assert(
@@ -134,7 +135,7 @@ object PomTests extends TestSuite {
           tag = None
         )
       )
-      val pomEmptyScm = pomXml(artifact, deps, artifactId, updatedSettings)
+      val pomEmptyScm = pomXml(artifact, deps, artifactId, updatedSettings, versionScheme)
 
       'scm - {
         val scm = (pomEmptyScm \ "scm").head
@@ -151,7 +152,7 @@ object PomTests extends TestSuite {
 
     'pomNoLicenses - {
       val updatedSettings = settings.copy(licenses = Seq.empty)
-      val pomNoLicenses = pomXml(artifact, deps, artifactId, updatedSettings)
+      val pomNoLicenses = pomXml(artifact, deps, artifactId, updatedSettings, versionScheme)
 
       'licenses - {
         assert(
@@ -163,7 +164,13 @@ object PomTests extends TestSuite {
 
     'pomNoDeps - {
       val pomNoDeps =
-        pomXml(artifact, dependencies = Agg.empty, artifactId = artifactId, pomSettings = settings)
+        pomXml(
+          artifact,
+          dependencies = Agg.empty,
+          artifactId = artifactId,
+          pomSettings = settings,
+          versionScheme = versionScheme
+        )
 
       'dependencies - {
         assert(
@@ -175,7 +182,7 @@ object PomTests extends TestSuite {
 
     'pomNoDevelopers - {
       val updatedSettings = settings.copy(developers = Seq.empty)
-      val pomNoDevelopers = pomXml(artifact, deps, artifactId, updatedSettings)
+      val pomNoDevelopers = pomXml(artifact, deps, artifactId, updatedSettings, versionScheme)
 
       'developers - {
         assert(
@@ -184,15 +191,33 @@ object PomTests extends TestSuite {
         )
       }
     }
+
+    test("pomNoPropertiesDefined") {
+      val pomWithVersionScheme = pomXml(artifact, deps, artifactId, settings, versionScheme)
+
+      assert((pomWithVersionScheme \ "properties").isEmpty)
+    }
+
+    test("pomVersionScheme") {
+      val earlySemVerScheme = VersionScheme.EarlySemVer
+      val pomWithVersionScheme = pomXml(artifact, deps, artifactId, settings, earlySemVerScheme)
+
+      assert(
+        (pomWithVersionScheme \ "properties").nonEmpty,
+        (pomWithVersionScheme \ "properties" \ "versionScheme.info").length == 1,
+        (pomWithVersionScheme \ "properties" \ "versionScheme.info").head == "early-semver"
+      )
+    }
   }
 
   def pomXml(
       artifact: Artifact,
       dependencies: Agg[Dependency],
       artifactId: String,
-      pomSettings: PomSettings
+      pomSettings: PomSettings,
+      versionScheme: VersionScheme
   ) =
-    XML.loadString(Pom(artifact, dependencies, artifactId, pomSettings))
+    XML.loadString(Pom(artifact, dependencies, artifactId, pomSettings, versionScheme))
 
   def singleText(seq: NodeSeq) =
     seq
