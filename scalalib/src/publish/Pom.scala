@@ -30,7 +30,8 @@ object Pom {
       artifact: Artifact,
       dependencies: Agg[Dependency],
       name: String,
-      pomSettings: PomSettings
+      pomSettings: PomSettings,
+      versionScheme: VersionScheme
   ): String = {
     val xml =
       <project
@@ -63,6 +64,9 @@ object Pom {
         <developers>
           {pomSettings.developers.map(renderDeveloper)}
         </developers>
+        <properties>
+          {renderVersionScheme(versionScheme)}
+        </properties>.optional
         <dependencies>
           {dependencies.map(renderDependency).toSeq}
         </dependencies>
@@ -124,6 +128,12 @@ object Pom {
         {scope}
         {optional}
       </dependency>
+  }
+
+  private def renderVersionScheme(versionScheme: VersionScheme): Option[Elem] = {
+    versionScheme.value.map(value =>
+      <info.versionScheme>{value}</info.versionScheme>
+    )
   }
 
 }
